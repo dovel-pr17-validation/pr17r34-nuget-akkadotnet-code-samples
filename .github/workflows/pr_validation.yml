@@ -1,0 +1,72 @@
+name: pr_validation
+
+on:
+  push:
+    branches:
+      - master
+      - dev
+  pull_request:
+    branches:
+      - master
+      - dev
+
+jobs:
+  build:
+    name: ${{ matrix.solution-name }}-${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+        solution-name:
+          - ShardingSqlServer
+          - ClusterClient
+          - Aspire
+          - CqrsSqlServer
+          - AutofacIntegration
+          - ReliableRabbitMQ
+          - SqlInitContainer
+          - LongRunningTasks
+        include:
+          - solution-name: ShardingSqlServer
+            solution-path: src/clustering/sharding-sqlserver/ShardingSqlServer.slnx
+          - solution-name: ClusterClient
+            solution-path: src/clustering/cluster-client/ClusterClientSample.slnx
+          - solution-name: Aspire
+            solution-path: src/clustering/cluster-bootstrap/Aspire/Aspire.slnx
+          - solution-name: CqrsSqlServer
+            solution-path: src/cqrs/cqrs-sqlserver/CqrsSqlServer.slnx
+          - solution-name: AutofacIntegration
+            solution-path: src/dependency-injection/AutofacIntegration/AutofacIntegration.slnx
+          - solution-name: ReliableRabbitMQ
+            solution-path: src/reliability/rabbitmq-backpressure/ReliableRabbitMQ.slnx
+          - solution-name: SqlInitContainer
+            solution-path: infrastructure/mssql-init-container/src/Akka.SqlInitContainer.slnx
+          - solution-name: LongRunningTasks
+            solution-path: src/async/long-running-tasks/LongRunningTasks.slnx
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          fetch-depth: 0
+
+      - name: "Install .NET SDK"
+        uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6
+        with:
+          global-json-file: "./global.json"
+
+      - name: "Update release notes"
+        shell: pwsh
+        run: ./build.ps1
+
+      - name: "dotnet build"
+        run: dotnet build ${{ matrix.solution-path }} -c Release
+
+      - name: "dotnet test"
+        shell: bash
+        run: |
+          if dotnet sln ${{ matrix.solution-path }} list | grep -qi "Tests"; then
+            dotnet test ${{ matrix.solution-path }} -c Release --no-build
+          else
+            echo "No test projects in solution; skipping dotnet test."
+          fi
