@@ -9,6 +9,7 @@
     <ItemGroup>
         <PackageReference Include="Akka.Cluster.Sharding" />
         <PackageReference Include="Akka.Cluster.Hosting" />
+        <PackageReference Include="Akka.Persistence.Hosting" VersionOverride="1.5.74" />
         <PackageReference Include="Microsoft.Extensions.Logging.Configuration" />
         <PackageReference Include="Grpc.Tools">
             <PrivateAssets>all</PrivateAssets>
